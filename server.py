@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# خادم التحكم عن بعد - نسخة متوافقة مع المنصات السحابية (Replit, Railway, Render)
+# خادم التحكم عن بعد - نسخة مع دعم CORS كامل
 
 import http.server
 import socketserver
@@ -11,25 +11,26 @@ import uuid
 import subprocess
 from urllib.parse import urlparse
 
-# تحديد المنفذ: اقرأه من متغير البيئة PORT الذي تحدده المنصة، أو استخدم 5000 كاحتياطي
 PORT = int(os.environ.get("PORT", 5000))
-# الاستماع على كل العناوين (ضروري للمنصات السحابية)
 HOST = "0.0.0.0"
 SESSIONS_DIR = "sessions"
 
-# إنشاء مجلد الجلسات
 if not os.path.exists(SESSIONS_DIR):
     os.makedirs(SESSIONS_DIR)
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  # تعطيل السجل
+        pass
 
-    def do_OPTIONS(self):
-        self.send_response(200)
+    def end_headers(self):
+        # إضافة رؤوس CORS إلى كل استجابة
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
         self.end_headers()
 
     def do_GET(self):
@@ -38,7 +39,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/" or path == "/index.html":
             self.send_response(200)
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(b"<h1>✅ Server is running on cloud</h1>")
@@ -46,7 +46,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         elif path == "/api/sessions":
             self.send_response(200)
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-type", "application/json; charset=utf-8")
             self.end_headers()
             sessions = []
@@ -103,7 +102,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 json.dump(existing, f, ensure_ascii=False, indent=4)
 
             self.send_response(200)
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-type", "application/json; charset=utf-8")
             self.end_headers()
             response = {
@@ -134,7 +132,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 output = str(e)
 
             self.send_response(200)
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-type", "application/json; charset=utf-8")
             self.end_headers()
             response = {
